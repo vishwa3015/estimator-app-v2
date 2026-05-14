@@ -1,0 +1,59 @@
+{
+  "ReportId": 50264667,
+  "Street": "1240 MAPLE RD",
+  "BuildingId": "4",
+  "City": "ELMA",
+  "State": "NY",
+  "Zip": "14059",
+  "Latitude": 42.8022826,
+  "Longitude": -78.621854,
+  "ClaimNumber": null,
+  "ClaimInfo": null,
+  "BatchId": null,
+  "CatId": null,
+  "DatePlaced": "2023-01-13T07:39:12.573",
+  "DateCompleted": "2023-01-15T18:00:00",
+  "PONumber": null,
+  "Comments": null,
+  "ReportImage": [
+    {
+      "SequenceNumber": 1,
+      "ImageId": 347692,
+      "Description": "User submitted photo",
+      "EffectiveDate": "2023-03-19T22:18:33.867"
+    }
+  ],
+  "ReferenceId": null,
+  "InsuredName": null,
+  "MeasurementRequestType": 2,
+  "ReportDownloadLink": "https://d3jdn4qe4swulf.cloudfront.net/sandbox/50264667.pdf",
+  "EligibleForUpgrade": false,
+  "Status": "Completed",
+  "Area": "2251.2 sq. ft",
+  "Pitch": "5/12",
+  "LengthRidge": "40 ft",
+  "LengthValley": "0 ft",
+  "LengthEave": "200 ft",
+  "LengthRake": "0 ft",
+  "ProductPrimaryId": 31,
+  "ProductPrimary": "Premium - Residential",
+  "ProductDeliveryId": 8,
+  "ProductDelivery": "Regular Delivery",
+  "AddOnProductIds": null,
+  "AllowsUserSubmittedPhotos": true,
+  "LengthHip": "88 ft",
+  "ProfileId": 0,
+  "UserName": null,
+  "SubstituteFromProduct": null,
+  "SubstituteToProduct": null,
+  "CanCancelReport": false,
+  "JobName": null,
+  "TotalRoofFacets": "4",
+  "PitchTable": [
+    {
+      "Pitch": "5/12",
+      "RoofArea": "2251.2 sq. ft",
+      "PercentageRoofArea": "100%"
+    }
+  ]
+}

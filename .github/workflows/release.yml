@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # -----------------------------------------------------------------
+      # Determine bump type from PR label.
+      # Add one of these labels before merging:
+      #   release:major  →  breaking change / new major capability
+      #   release:minor  →  new feature / integration
+      #   release:patch  →  bug fix / hotfix
+      #   (no label)     →  skip — no release this merge
+      # -----------------------------------------------------------------
+      - name: Determine version bump from PR label
+        id: bump
+        run: |
+          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
+          if echo "$LABELS" | grep -q '"release:major"'; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q '"release:minor"'; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          elif echo "$LABELS" | grep -q '"release:patch"'; then
+            echo "type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "type=skip" >> $GITHUB_OUTPUT
+          fi
+
+      - name: No release label — skipping
+        if: steps.bump.outputs.type == 'skip'
+        run: |
+          echo "::notice::No release label on this PR. Add release:major / release:minor / release:patch to trigger a release."
+
+      - uses: actions/setup-node@v4
+        if: steps.bump.outputs.type != 'skip'
+        with:
+          node-version: '20'
+
+      - name: Bump version in package.json
+        if: steps.bump.outputs.type != 'skip'
+        id: version
+        run: |
+          npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to v${NEW_VERSION}"
+
+      - name: Generate CHANGELOG entry
+        if: steps.bump.outputs.type != 'skip'
+        id: changelog
+        run: |
+          VERSION="v${{ steps.version.outputs.new_version }}"
+          DATE=$(date +%Y-%m-%d)
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD")
+          fi
+
+          NEW_ENTRY="## ${VERSION} (${DATE})\n\n${COMMITS}"
+
+          if [ -f CHANGELOG.md ]; then
+            # Prepend new entry after the header line
+            HEADER=$(head -1 CHANGELOG.md)
+            BODY=$(tail -n +2 CHANGELOG.md)
+            printf '%s\n\n%b\n%s' "$HEADER" "$NEW_ENTRY" "$BODY" > CHANGELOG.md
+          else
+            printf '# Changelog\n\n%b\n' "$NEW_ENTRY" > CHANGELOG.md
+          fi
+
+          # Store entry for GitHub Release body
+          {
+            echo "entry<<CHANGELOG_EOF"
+            printf '%b' "$NEW_ENTRY"
+            echo "CHANGELOG_EOF"
+          } >> $GITHUB_OUTPUT
+
+      - name: Commit, tag, and push
+        if: steps.bump.outputs.type != 'skip'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json CHANGELOG.md
+          git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
+          git tag "v${{ steps.version.outputs.new_version }}"
+          git push origin main --follow-tags
+
+      - name: Create GitHub Release
+        if: steps.bump.outputs.type != 'skip'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.version.outputs.new_version }}" \
+            --title "v${{ steps.version.outputs.new_version }}" \
+            --notes "${{ steps.changelog.outputs.entry }}"

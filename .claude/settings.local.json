@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed \"s/.*from ['\\\\\"]\\\\\\\\\\([^'\\\\\"]*\\\\\\\\\\)['\\\\\"].*/\\\\\\\\1/\")",
+      "Read(//tmp/**)",
+      "Bash(cat)",
+      "Bash(pwsh /tmp/check_unused.ps1)"
+    ]
+  }
+}

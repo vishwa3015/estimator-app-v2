@@ -1,0 +1,35 @@
+{
+  "OrderReports": [
+    {
+      "ReportAddresses": [
+        {
+          "Address": "1240 MAPLE RD",
+          "City": "ELMA",
+          "State": "NY",
+          "Zip": "14059",
+          "Country": "US",
+          "AddressType": 1,
+          "VerifierUsedId": null,
+          "MapperUsedId": null,
+          "VerificationResultTypeId": null
+        }
+      ],
+      "ReportAttibutes": [
+        {
+          "Attribute": 9,
+          "Value": "Ask"
+        }
+      ],
+      "BuildingId": 4,
+      "PrimaryProductId": 31,
+      "DeliveryProductId": 8,
+      "MeasurementInstructionType": 2,
+      "ChangesInLast4Years": false,
+      "Comments": null,
+      "ReferenceID": null
+    }
+  ],
+  "PromoCode": null,
+  "PlaceOrderUser": null,
+  "CreditCardData": null
+}

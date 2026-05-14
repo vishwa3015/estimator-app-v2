@@ -1,0 +1,411 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald&family=PT+Serif:ital,wght@0,400;0,700;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 359 67% 47%; /* Converted from #e30919 */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 210 100% 20%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 359 67% 47%; /* Converted from #e30919 */
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 100% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 210 100% 16%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 359 67% 47%; /* Converted from #e30919 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 359 67% 47%; /* Converted from #e30919 */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222.2 47.4% 11.2%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Improve tap targets on mobile */
+  button, a, select, input {
+    @apply focus:outline-none;
+  }
+  
+  /* Fix iOS font sizing */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Make sure content doesn't overflow on small screens */
+.container {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+/* Better scrolling for mobile */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+.number-input::-webkit-inner-spin-button, 
+.number-input::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+.number-input {
+  -moz-appearance: textfield;
+}
+
+/* Desktop optimizations (707px and above) */
+@media (min-width: 707px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    max-width: 1200px;
+  }
+  
+  .desktop-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+  }
+  
+  .desktop-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
+  }
+  
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .desktop-dashboard {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+  }
+  
+  .desktop-content {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 706px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  /* Increase contrast for better visibility */
+  .text-muted-foreground {
+    opacity: 0.8;
+  }
+  
+  /* Better touch targets */
+  .btn, button, a, input, select {
+    min-height: 2.5rem;
+  }
+}
+
+
+
+
+/* CK EDITOR */
+
+@media print {
+	body {
+		margin: 0 !important;
+	}
+}
+
+:root {
+	--ck-content-font-family: 'Lato';
+}
+
+.main-container {
+	font-family: var(--ck-content-font-family);
+	width: fit-content;
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.editor-container_classic-editor .editor-container__editor {
+	min-width: 100%;
+	max-width: 795px;
+}
+
+/* Compact mode ONLY: overflow containment for narrow containers (e.g. material item cards) */
+.main-container.richtext-compact {
+	min-width: 0;
+	max-width: 100%;
+	overflow-x: auto;
+}
+.richtext-compact .editor-container_classic-editor .editor-container__editor {
+	min-width: 0;
+	width: 100%;
+	max-width: 100%;
+}
+
+.ck-content {
+  font-size: 12px;
+}
+
+.ck-content s,
+.ck-content del {
+  text-decoration: line-through !important;
+}
+
+.ck-content h3.category {
+	font-family: 'Oswald';
+	font-size: 20px;
+	font-weight: bold;
+	color: #555;
+	letter-spacing: 10px;
+	margin: 0;
+	padding: 0;
+}
+
+.ck-content h2.document-title {
+	font-family: 'Oswald';
+	font-size: 50px;
+	font-weight: bold;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.ck-content h3.document-subtitle {
+	font-family: 'Oswald';
+	font-size: 20px;
+	color: #555;
+	margin: 0 0 1em;
+	font-weight: bold;
+	padding: 0;
+}
+
+.ck-content p.info-box {
+	--background-size: 30px;
+	--background-color: #e91e63;
+	padding: 1.2em 2em;
+	border: 1px solid var(--background-color);
+	background:
+		linear-gradient(135deg, var(--background-color) 0%, var(--background-color) var(--background-size), transparent var(--background-size)),
+		linear-gradient(
+			135deg,
+			transparent calc(100% - var(--background-size)),
+			var(--background-color) calc(100% - var(--background-size)),
+			var(--background-color)
+		);
+	border-radius: 10px;
+	margin: 1.5em 2em;
+	box-shadow: 5px 5px 0 #ffe6ef;
+}
+
+.ck-content span.marker {
+	background: yellow;
+}
+
+.ck-content span.spoiler {
+	background: #000;
+	color: #000;
+}
+
+.ck-content span.spoiler:hover {
+	background: #000;
+	color: #fff;
+}
+
+.ck-content .button {
+	display: inline-block;
+	width: 260px;
+	border-radius: 8px;
+	margin: 0 auto;
+	padding: 12px;
+	color: #ffffff;
+	font-size: 24px;
+	font-weight: 700;
+	text-align: center;
+	text-decoration: none;
+}
+
+.ck-content .button--green {
+	background-color: #406b1e;
+}
+
+.ck-content .button--black {
+	background-color: #141517;
+}
+
+.ck-source-editing-area textarea{
+  overflow: auto;
+}
+
+.ck .ck-editor__main {
+  max-height: 80vh;
+  overflow: auto;
+}
+
+/* Overflow containment ONLY when inside compact mode (material item cards) */
+.richtext-compact .ck.ck-editor {
+  max-width: 100%;
+  min-width: 0;
+}
+.richtext-compact .ck .ck-editor__top {
+  min-width: 0;
+  overflow-x: auto;
+}
+.richtext-compact .ck .ck-editor__top .ck-toolbar,
+.richtext-compact .ck .ck-editor__top .ck-menubar {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.richtext-compact .ck .ck-editor__editable {
+  min-width: 0;
+}
+
+ul {
+  list-style-type: disc !important;
+}
+
+ol {
+  list-style-type: decimal !important;
+}
+
+ol .ck-list-marker-font-size::marker {
+  font-size: 10px;
+}
+
+.title-page {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  padding-bottom: 130px;
+}
+
+
+.title-page::before {
+  height: 601px;
+  width: 300px;
+  content: "";
+  background-color: #C62828;
+  position: absolute;
+  bottom: -160px;
+  right: -120px;
+  transform: rotate(38deg);
+}
+
+.introduction-page {
+  position: relative;
+  padding-bottom: 150px;
+  padding-top: 180px;
+  overflow: hidden;
+}
+
+.introduction-page::before {
+  height: 601px;
+  width: 300px;
+  content: "";
+  background-color: #000;
+  position: absolute;
+  top: -386px;
+  left: -120px;
+  transform: rotate(43deg);
+}
+
+.introduction-page::after {
+  height: 508px;
+  width: 300px;
+  content: "";
+  background-color: #C62828;
+  position: absolute;
+  bottom: -260px;
+  right: -120px;
+  transform: rotate(42deg);
+}
+
+.introduction-page.inspection-page{
+  padding-bottom: 50px;
+}
+
+.introduction-page.inspection-page::after{
+  content: none;
+}

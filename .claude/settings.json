@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"d:\\\\Estimate-V2\\\\estimator-app\" && rm src/hooks/use-job-management.ts src/hooks/use-pdf-preview.ts src/hooks/use-sections-batch-save.ts && echo \"done\")",
+      "Bash(Get-ChildItem -Path \"d:\\\\Estimate-V2\\\\estimator-app\" -Depth 1)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(grep -v \"^sections$\")",
+      "Bash(grep -v \"^generators$\")",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(npx husky *)",
+      "Bash(npx eslint *)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "d:\\Estimate-V2\\estimator-app\\src\\hooks"
+    ]
+  }
+}
