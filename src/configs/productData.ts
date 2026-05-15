@@ -1,4 +1,7 @@
 
+// TEST: intentional lint error — unused variable
+const _testUnused = "this should block the commit";
+
 export type ProductData = {
   // products: {
   //   title: string;
