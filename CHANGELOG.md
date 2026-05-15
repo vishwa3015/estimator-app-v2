@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.1.5 (2026-05-15) [patch]
+
+**PR #16:** chore(Test): Testing PR
+
+### Changes
+- Merge pull request #16 from vishwa3015/test-branch
+- chore(test): testing commit
+
 ## v2.1.4 (2026-05-15) [patch]
 
 **PR #15:** fix(test): testing new flow
