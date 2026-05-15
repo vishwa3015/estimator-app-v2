@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.1.3 (2026-05-15) [patch]
+
+**PR #14:** fix(test): Test/fix issues
+
+### Changes
+- Merge pull request #14 from vishwa3015/test/fix-issues
+- fix(test): test issue title
+- fix: use RELEASE_TOKEN PAT to bypass branch protection on release push
+- Merge pull request #13 from vishwa3015/test/fix-issues
+- chore(test): test
+- fix: support scoped PR titles like fix(scope): in release workflow
+- Merge pull request #11 from vishwa3015/test-pr-validation
+- fix(Test): test another happypath
+- Merge pull request #10 from vishwa3015/test-pr-validation
+- chore(test): testing happypath
+- Merge pull request #9 from vishwa3015/test-pr-validation
+- chore(Test): test commit
+- docs: update DEV-SETUP with all fixes from testing
+
 ## v2.1.2 (2026-05-15) [patch]
 
 **PR #8:** fix: push git tag explicitly instead of using follow-tags
