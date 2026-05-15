@@ -71,3 +71,58 @@ Yes it is!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+
+---
+
+## Contributing & Release Process
+
+### PR Title Convention (required)
+
+Every pull request into `main`/`master` **must** have a title that follows [Conventional Commits](https://www.conventionalcommits.org/). A GitHub Actions check runs automatically on every PR and **blocks merging** if the title is invalid.
+
+**Format:**
+
+```
+<type>[optional scope]: <short description>
+```
+
+**Examples:**
+
+```
+feat: add PDF export for estimates
+feat(auth): support Google SSO
+fix: correct tax calculation on line items
+fix(ui): button misaligned on mobile
+feat!: redesign estimate API  ← breaking change, triggers major bump
+chore: update dependencies
+docs: update README
+skip: internal branch sync  ← no release
+```
+
+### Allowed types and what they trigger
+
+| Type(s) | Version bump |
+|---|---|
+| `feat!`, `BREAKING`, `major` | Major (`1.x.x` → `2.0.0`) |
+| `feat`, `feature`, `minor` | Minor (`1.0.x` → `1.1.0`) |
+| `fix`, `hotfix`, `patch`, `chore`, `docs`, `refactor`, `style`, `perf`, `test`, `build`, `ci` | Patch (`1.0.0` → `1.0.1`) |
+| `skip`, `[skip]` | No release |
+
+### What happens on merge
+
+1. The PR title is checked — merge is blocked if invalid.
+2. On merge, the **Release** workflow runs automatically:
+   - Bumps the version in `package.json` based on the PR title prefix.
+   - Appends a new entry to `CHANGELOG.md`.
+   - Creates a git tag and a GitHub Release with the changelog as release notes.
+3. No manual versioning or tagging is needed.
+
+### Enabling merge blocking (one-time setup)
+
+To enforce the PR title check as a hard merge gate, add it as a required status check:
+
+1. Go to **Settings → Branches** in your GitHub repo.
+2. Edit (or create) the branch protection rule for `main`/`master`.
+3. Enable **"Require status checks to pass before merging"**.
+4. Search for and add **`Validate PR Title`**.
+5. Save.
