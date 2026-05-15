@@ -21,13 +21,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -52,7 +45,6 @@ import type {
   ImportPreviewRow,
   ImportResultRow,
   ImportRawRow,
-  ImportStatus,
   QuoteTab,
   FormulaRow,
   TokenType,
@@ -181,8 +173,7 @@ const ProductsSettings = () => {
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [quoteTabs, setQuoteTabs] = useState<QuoteTab[]>([]);
   const [tabSectionsMap, setTabSectionsMap] = useState<TabSectionsMap>({});
-  const [loadingSections, setLoadingSections] = useState(false);
-  const [selectedSectionPerTab, setSelectedSectionPerTab] = useState<Record<string, string>>({});
+  const [, setLoadingSections] = useState(false);
   const [sectionsLoadedOnce, setSectionsLoadedOnce] = useState(false);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [variantsLoading, setVariantsLoading] = useState(false);
@@ -353,12 +344,11 @@ const ProductsSettings = () => {
         if (!v.id) {
           await productService.createSupplierVariant(payload);
         } else if (v._dirty) {
-          const { product_id, ...updatePayload } = payload;
+          const { product_id: _product_id, ...updatePayload } = payload;
           await productService.updateSupplierVariant(v.id, updatePayload);
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : "Unknown error";
-        console.error(`Failed to persist variant for supplier ${supplierId}:`, message);
         toast.error(`Failed to save variant: ${message}`);
         // re-throw so handleSubmit knows something went wrong
         throw error;
@@ -380,8 +370,6 @@ const ProductsSettings = () => {
     setSavingVariants(true);
 
     try {
-      const sectionsArray = Object.values(selectedSectionPerTab).filter(Boolean);
-
       const existingCalc =
         editingProduct?.calculation && typeof editingProduct.calculation === "object"
           ? { ...editingProduct.calculation }
@@ -438,8 +426,8 @@ const ProductsSettings = () => {
             supplier_id: activeVariant?.supplier_id || undefined,  // ADD THIS
             variant_id: activeVariant?.id || undefined,
           });
-        } catch (syncErr) {
-          console.warn("Could not sync product into estimates:", syncErr);
+        } catch {
+          // sync failure is non-critical; estimates will reflect changes on next load
         }
       }
 
@@ -489,7 +477,7 @@ const ProductsSettings = () => {
 
       setSupplierVariantMap(grouped);
       setReadOnlyVariants(nonDefault);
-    } catch (_) {
+    } catch {
       // silently ignore
     } finally {
       setVariantsLoading(false);
@@ -790,8 +778,6 @@ const ProductsSettings = () => {
   const resultRows: ImportResultRow[] = [];
 
   try {
-    const createdCount = 0;
-    const updatedCount = 0;
     const categoryCache: Record<string, string> = {};
       const importNames = new Set(
         importRows
