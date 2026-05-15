@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.1.4 (2026-05-15) [patch]
+
+**PR #15:** fix(test): testing new flow
+
+### Changes
+- Merge pull request #15 from vishwa3015/testing/fixes
+- fix(test): testing new flow
+
 ## v2.1.3 (2026-05-15) [patch]
 
 **PR #14:** fix(test): Test/fix issues
