@@ -126,4 +126,3 @@ To enforce the PR title check as a hard merge gate, add it as a required status 
 3. Enable **"Require status checks to pass before merging"**.
 4. Search for and add **`Validate PR Title`**.
 5. Save.
-
