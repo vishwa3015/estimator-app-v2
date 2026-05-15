@@ -1,7 +1,7 @@
 # Dev Setup Guide
 ## Lint · Conventional Commits · Auto Versioning · Changelog · GitHub Releases
 
-Complete setup guide to replicate this workflow in any new project.
+Complete step-by-step guide to replicate this CI/CD workflow in any new project.
 
 ---
 
@@ -11,7 +11,7 @@ Complete setup guide to replicate this workflow in any new project.
 |---|---|---|
 | **pre-commit** | Every `git commit` | Blocks if ESLint or TypeScript errors exist |
 | **commit-msg** | Every `git commit` | Blocks if commit message has no conventional prefix |
-| **pr-title-check.yml** | Every PR opened/edited on GitHub | Blocks PR if title has no conventional prefix |
+| **pr-title-check.yml** | Every PR opened/edited on GitHub | Fails check if title has no conventional prefix |
 | **release.yml** | Every PR merged to `master`/`main` | Bumps version, writes CHANGELOG, creates GitHub Release |
 
 ---
@@ -33,6 +33,8 @@ npm install --save-dev \
   eslint-plugin-react-hooks \
   eslint-plugin-react-refresh
 ```
+
+> **Note:** If not using React, remove `eslint-plugin-react-hooks` and `eslint-plugin-react-refresh`.
 
 ---
 
@@ -75,9 +77,7 @@ export default tseslint.config(
 );
 ```
 
-> **Note:** If not using React, remove the react-hooks and react-refresh plugins and imports.
-
-> **Tip:** Variables prefixed with `_` (e.g. `_unused`, `_product_id`) are intentionally ignored by the unused-vars rule. Use this for destructured values you need to discard.
+> **Tip:** Variables prefixed with `_` (e.g. `_unused`, `_id`) are intentionally ignored by the unused-vars rule. Use this for destructured values you need to discard.
 
 ---
 
@@ -142,7 +142,7 @@ Add/update these fields in `package.json`:
 
 ## Part 5 — Initialize Husky
 
-Run once to set up husky (creates `.husky/` and sets `core.hooksPath`):
+Run once to set up husky (creates `.husky/` directory and sets `core.hooksPath`):
 
 ```bash
 npm run prepare
@@ -198,9 +198,10 @@ if [ $EXIT -ne 0 ]; then
   echo ""
   echo "Commit blocked: message must follow Conventional Commits format."
   echo ""
-  echo "  Format : <type>: <description>"
+  echo "  Format : <type>[optional scope]: <description>"
   echo "  Example: feat: add DocuSign integration"
   echo "  Example: fix: broken custom field on proposal"
+  echo "  Example: fix(auth): token expiry not handled"
   echo "  Example: chore: update dependencies"
   echo ""
   echo "  Types that trigger a release:"
@@ -216,8 +217,6 @@ fi
 ---
 
 ## Part 7 — GitHub Actions: PR Title Check
-
-This workflow runs on every PR and **fails the check** if the title has no conventional prefix. Set it as a required check (Part 11) to block merging entirely.
 
 Create `.github/workflows/pr-title-check.yml`:
 
@@ -240,19 +239,22 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo "PR Title: $PR_TITLE"
+          echo ""
 
-          VALID_PATTERN='^(feat!|BREAKING CHANGE|BREAKING|major|feat|feature|minor|fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci|skip)(\([^)]+\))?!?:[[:space:]].+'
+          VALID_PATTERN='^(feat!|BREAKING CHANGE|BREAKING|major|feat|feature|minor|fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci|skip)(\([^)]+\))?!?:[[:space:]].+|^\[skip\]'
 
           if echo "$PR_TITLE" | grep -qE "$VALID_PATTERN"; then
             echo "PR title is valid."
+            echo ""
+
             if echo "$PR_TITLE" | grep -iqE '^(feat!|BREAKING CHANGE|BREAKING|major)(\([^)]+\))?!?:'; then
-              echo "→ MAJOR release will be triggered on merge."
+              echo "Type: MAJOR release will be triggered on merge."
             elif echo "$PR_TITLE" | grep -iqE '^(feat|feature|minor)(\([^)]+\))?!?:'; then
-              echo "→ MINOR release will be triggered on merge."
+              echo "Type: MINOR release will be triggered on merge."
             elif echo "$PR_TITLE" | grep -iqE '^(fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci)(\([^)]+\))?!?:'; then
-              echo "→ PATCH release will be triggered on merge."
-            else
-              echo "→ No release will be triggered on merge."
+              echo "Type: PATCH release will be triggered on merge."
+            elif echo "$PR_TITLE" | grep -iqE '^\[skip\]|^skip(\([^)]+\))?:'; then
+              echo "Type: No release will be triggered on merge (skip)."
             fi
             exit 0
           else
@@ -260,12 +262,27 @@ jobs:
             echo ""
             echo "Your title: \"$PR_TITLE\""
             echo ""
-            echo "Required format:  <type>: <description>"
+            echo "Required format:  <type>[optional scope]: <description>"
+            echo ""
             echo "Examples:"
-            echo "  feat: add PDF export"
-            echo "  fix: correct tax calculation"
-            echo "  feat!: redesign estimate API (breaking change)"
+            echo "  feat: add PDF export for estimates"
+            echo "  feat(auth): support Google SSO"
+            echo "  fix: correct tax calculation on line items"
+            echo "  fix(ui): button misaligned on mobile"
+            echo "  feat!: redesign estimate API (BREAKING CHANGE)"
             echo "  chore: update dependencies"
+            echo "  chore(deps): bump react to v19"
+            echo "  docs: update README"
+            echo "  skip: internal branch sync"
+            echo ""
+            echo "Allowed types:"
+            echo "  MAJOR release → feat!, BREAKING, major"
+            echo "  MINOR release → feat, feature, minor"
+            echo "  PATCH release → fix, hotfix, patch, chore, docs,"
+            echo "                  refactor, style, perf, test, build, ci"
+            echo "  No release    → skip, [skip]"
+            echo ""
+            echo "Rename your PR title and this check will re-run automatically."
             exit 1
           fi
 ```
@@ -296,35 +313,48 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      # Determine bump type from PR title:
-      #   MAJOR  →  feat!: / BREAKING: / major:
-      #   MINOR  →  feat: / feature: / minor:
-      #   PATCH  →  fix: / hotfix: / chore: / docs: / refactor: / style: / perf: / test: / build: / ci:
-      #   SKIP   →  skip: / [skip] / (no recognized prefix)
+      # -----------------------------------------------------------------
+      # Determine bump type from PR title using Conventional Commits:
+      #
+      #   MAJOR  →  feat!: …  |  BREAKING: …  |  major: …
+      #   MINOR  →  feat: …  |  feature: …  |  minor: …
+      #   PATCH  →  fix: …  |  hotfix: …  |  patch: …  |  chore: …
+      #             docs: …  |  refactor: …  |  style: …  |  perf: …
+      #             test: …  |  build: …  |  ci: …
+      #   SKIP   →  skip: …  |  [skip]  |  (no recognized prefix)
+      #
+      # All types support optional scopes: fix(scope): … feat(scope): …
+      # -----------------------------------------------------------------
       - name: Determine version bump from PR title
         id: bump
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           echo "PR title: $PR_TITLE"
 
-          if echo "$PR_TITLE" | grep -iqE '^(feat!|BREAKING CHANGE|BREAKING|major):'; then
+          if echo "$PR_TITLE" | grep -iqE '^(feat!|BREAKING CHANGE|BREAKING|major)(\([^)]+\))?!?:'; then
             echo "type=major" >> $GITHUB_OUTPUT
-          elif echo "$PR_TITLE" | grep -iqE '^(feat|feature|minor):'; then
+            echo "Bump: MAJOR"
+          elif echo "$PR_TITLE" | grep -iqE '^(feat|feature|minor)(\([^)]+\))?!?:'; then
             echo "type=minor" >> $GITHUB_OUTPUT
-          elif echo "$PR_TITLE" | grep -iqE '^(fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci):'; then
+            echo "Bump: MINOR"
+          elif echo "$PR_TITLE" | grep -iqE '^(fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci)(\([^)]+\))?!?:'; then
             echo "type=patch" >> $GITHUB_OUTPUT
-          elif echo "$PR_TITLE" | grep -iqE '^\[skip\]|^skip:'; then
+            echo "Bump: PATCH"
+          elif echo "$PR_TITLE" | grep -iqE '^\[skip\]|^skip(\([^)]+\))?:'; then
             echo "type=skip" >> $GITHUB_OUTPUT
+            echo "Bump: SKIP (explicit)"
           else
             echo "type=skip" >> $GITHUB_OUTPUT
-            echo "::warning::No conventional prefix in PR title. Add feat:, fix:, feat!: etc. to trigger a release."
+            echo "Bump: SKIP (no conventional prefix found)"
+            echo "::warning::PR title has no Conventional Commits prefix. Add feat:, fix:, feat!: etc. to trigger a release."
           fi
 
       - name: No release — skipping
         if: steps.bump.outputs.type == 'skip'
-        run: echo "::notice::No release for this PR."
+        run: |
+          echo "::notice::No release for this PR. Use a prefix like feat:, fix:, feat!: in the PR title to trigger a version bump."
 
       - uses: actions/setup-node@v4
         if: steps.bump.outputs.type != 'skip'
@@ -338,9 +368,11 @@ jobs:
           npm version ${{ steps.bump.outputs.type }} --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Bumped to v${NEW_VERSION}"
 
       - name: Generate CHANGELOG entry
         if: steps.bump.outputs.type != 'skip'
+        id: changelog
         run: |
           VERSION="v${{ steps.version.outputs.new_version }}"
           DATE=$(date +%Y-%m-%d)
@@ -365,8 +397,6 @@ jobs:
             printf '# Changelog\n\n%b\n' "$NEW_ENTRY" > CHANGELOG.md
           fi
 
-          # Write release notes to file — avoids env var interpolation issues
-          # with special characters in commit messages
           printf '%b\n' "$NEW_ENTRY" > /tmp/release_notes.md
 
       - name: Commit, tag, and push
@@ -378,15 +408,13 @@ jobs:
           git add bun.lock bun.lockb 2>/dev/null || true
           git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
           git tag "v${{ steps.version.outputs.new_version }}"
-          # Push commit and tag separately — --follow-tags only pushes annotated tags,
-          # not lightweight tags created with 'git tag'
           git push origin HEAD:${{ github.event.pull_request.base.ref }}
           git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: Create GitHub Release
         if: steps.bump.outputs.type != 'skip'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           gh release create "v${{ steps.version.outputs.new_version }}" \
             --title "v${{ steps.version.outputs.new_version }}" \
@@ -395,7 +423,80 @@ jobs:
 
 ---
 
-## Part 9 — Final File Structure
+## Part 9 — GitHub Repository Setup (Step by Step)
+
+Complete this **after** pushing all the files above to GitHub.
+
+### Step 9.1 — Enable GitHub Actions
+
+1. Go to your repo → **Settings → Actions → General**
+2. Under **"Actions permissions"** → select **"Allow all actions and reusable workflows"**
+3. Under **"Workflow permissions"** → select **"Read and write permissions"**
+4. Click **Save**
+
+---
+
+### Step 9.2 — Create a Personal Access Token (PAT)
+
+The release workflow needs a PAT to push version bump commits to the protected master branch.
+
+1. Go to **github.com → your profile (top-right avatar) → Settings**
+2. Scroll down → **Developer settings → Personal access tokens → Tokens (classic)**
+3. Click **Generate new token (classic)**
+4. Fill in:
+   - **Note:** `RELEASE_TOKEN`
+   - **Expiration:** No expiration (or 1 year)
+   - **Scopes:** Check ✅ **`repo`** (top-level — auto-checks all sub-items) and ✅ **`workflow`**
+5. Click **Generate token**
+6. **Copy the token immediately** — you cannot see it again
+
+---
+
+### Step 9.3 — Add PAT as Repository Secret
+
+1. Go to your repo → **Settings → Secrets and variables → Actions**
+2. Click **New repository secret**
+3. Name: `RELEASE_TOKEN`
+4. Value: paste the token from Step 9.2
+5. Click **Add secret**
+
+---
+
+### Step 9.4 — Create Branch Ruleset (blocks invalid PR titles + allows release bot)
+
+> **Important:** Use Rulesets (not classic Branch Protection Rules). Classic rules have no bot bypass support — the release workflow will fail trying to push to master.
+
+1. Go to your repo → **Settings → Rules → Rulesets**
+2. Click **New ruleset → New branch ruleset**
+3. Fill in:
+   - **Ruleset Name:** `master protection`
+   - **Enforcement status:** Active
+
+4. **Bypass list** → click **Add bypass** → select **`Repository admin`** → set to **Always allow**
+   > This allows the release bot (using your PAT) to push version bump commits directly to master.
+
+5. **Target branches** → click **Add target → Include by pattern** → type `master` → click **Add**
+
+6. Scroll to **Branch rules** → enable:
+   - ✅ **Require status checks to pass**
+     - Click **Add checks** → search for **`Validate PR Title`** → add it
+     - > **Note:** `Validate PR Title` only appears after the `pr-title-check.yml` workflow has run at least once on a PR. If it doesn't appear yet, create and merge one PR first, then come back and add it.
+
+7. Click **Save** (bottom of page)
+
+---
+
+### Step 9.5 — Verify Everything Works
+
+After saving the ruleset:
+
+- Open a new PR with an **invalid title** (e.g. `"updated stuff"`) → the `Validate PR Title` check should fail and the **Merge button should be greyed out**
+- Open a PR with a **valid title** (e.g. `fix: something`) → check should pass and Merge button becomes active
+- Merge a PR with `feat:` title → version bumps minor, CHANGELOG updated, GitHub Release created
+
+---
+
+## Part 10 — Final File Structure
 
 ```
 your-project/
@@ -414,55 +515,59 @@ your-project/
 
 ---
 
-## Part 10 — Commit Message & PR Title Reference
+## Part 11 — Commit Message & PR Title Reference
 
 ```
 feat!: rebuild core engine         → v1.0.0 → v2.0.0  (major)
 feat: add new integration          → v1.0.0 → v1.1.0  (minor)
 fix: broken field on form          → v1.0.0 → v1.0.1  (patch)
 chore: update dependencies         → v1.0.0 → v1.0.1  (patch)
+chore(deps): bump react to v19     → v1.0.0 → v1.0.1  (patch)
+fix(auth): token not refreshing    → v1.0.0 → v1.0.1  (patch)
 docs: update README                → v1.0.0 → v1.0.1  (patch)
 skip: internal refactor            → no release
 ```
+
+**Format:** `<type>[optional scope]: <description>`
+- Scopes are optional: `fix: something` and `fix(scope): something` both work
+- A space after the colon is required: `fix: something` ✅ — `fix:something` ❌
 
 The same prefixes apply to both **local commit messages** (enforced by commitlint) and **PR titles** (enforced by pr-title-check workflow + release workflow).
 
 ---
 
-## Part 11 — Make PR Title Check Required (Recommended)
-
-To prevent merging PRs with invalid titles on GitHub:
-
-1. Go to your repo → **Settings → Branches**
-2. Click **Add branch protection rule** (or edit existing)
-3. Set branch name pattern: `master` (or `main`)
-4. Enable **"Require status checks to pass before merging"**
-5. Search for and add: **`Validate PR Title`**
-6. Save
-
-Now GitHub will block the **Merge** button until the PR title passes the check.
-
----
-
 ## Part 12 — New Project Checklist
 
+### Local Setup
 - [ ] `npm install` all dependencies (Part 1)
 - [ ] Create `eslint.config.js` (Part 2)
 - [ ] Create `commitlint.config.js` (Part 3)
 - [ ] Update `package.json` scripts and lint-staged (Part 4)
 - [ ] Run `npm run prepare` to initialize husky (Part 5)
+- [ ] Verify: `git config --local core.hookspath` outputs `.husky/_`
 - [ ] Create `.husky/pre-commit` (Part 6)
 - [ ] Create `.husky/commit-msg` (Part 6)
 - [ ] Create `.github/workflows/pr-title-check.yml` (Part 7)
 - [ ] Create `.github/workflows/release.yml` (Part 8)
-- [ ] Push to GitHub
-- [ ] Enable Actions: repo → Settings → Actions → Allow all
-- [ ] Set branch protection + required check `Validate PR Title` (Part 11)
 - [ ] Set starting version in `package.json` → `"version": "1.0.0"`
+- [ ] Push everything to GitHub
+
+### GitHub Setup
+- [ ] Enable Actions: repo → Settings → Actions → Allow all + Read/write permissions (Step 9.1)
+- [ ] Create PAT with `repo` + `workflow` scopes (Step 9.2)
+- [ ] Add PAT as repo secret named `RELEASE_TOKEN` (Step 9.3)
+- [ ] Create Ruleset with Repository admin bypass + Validate PR Title required check (Step 9.4)
+
+### End-to-End Tests
 - [ ] **Test 1:** Commit with a `console.log` → should be blocked by lint
 - [ ] **Test 2:** Commit with message `"updated stuff"` → should be blocked by commitlint
-- [ ] **Test 3:** Open PR with invalid title → `Validate PR Title` check should fail
-- [ ] **Test 4:** Merge PR with `feat:` title → version bumps minor, CHANGELOG updated, GitHub Release created
+- [ ] **Test 3:** Commit with `chore:something` (no space) → should be blocked by commitlint
+- [ ] **Test 4:** Open PR with invalid title → `Validate PR Title` check fails, Merge button greyed out
+- [ ] **Test 5:** Open PR with `fix: something` → check passes, Merge button active
+- [ ] **Test 6:** Merge PR with `fix:` title → patch bump, CHANGELOG updated, GitHub Release created
+- [ ] **Test 7:** Merge PR with `feat:` title → minor bump
+- [ ] **Test 8:** Merge PR with `feat!:` title → major bump
+- [ ] **Test 9:** Merge PR with `chore:` or `chore(scope):` title → patch bump
 
 ---
 
@@ -473,9 +578,14 @@ Now GitHub will block the **Merge** button until the PR title passes the check.
 | Hooks not running at all | Husky not installed | Run `npm run prepare` |
 | `core.hookspath` not set | Husky init skipped | Run `git config core.hookspath .husky/_` |
 | Lint passes but shouldn't | `--max-warnings 0` missing | Add it to lint-staged config in `package.json` |
+| `_` prefixed vars still flagged | ESLint `varsIgnorePattern` not set | Add `varsIgnorePattern: "^_"` to no-unused-vars rule (Part 2) |
 | Actions not triggering | Actions disabled | Repo → Settings → Actions → Allow all |
-| Version not bumping | PR closed but not merged, or no valid prefix | Confirm PR was **merged** and title starts with `feat:`, `fix:`, etc. |
-| GitHub Release fails: tag exists locally but not pushed | `--follow-tags` only pushes annotated tags, not lightweight | Push tag explicitly: `git push origin "v1.2.3"` (already fixed in Part 8) |
-| GitHub Release fails: delimiter not found | Commit message contains special characters breaking heredoc | Write release notes to a file with `printf '%b\n' > /tmp/release_notes.md` (already fixed in Part 8) |
-| PR merged without version bump | PR title missing prefix | Always start PR title with `feat:`, `fix:`, `feat!:`, etc. |
-| `_` prefixed variables still flagged | ESLint `varsIgnorePattern` not set | Add `varsIgnorePattern: "^_"` to no-unused-vars rule (Part 2) |
+| `Validate PR Title` not in ruleset search | Workflow never ran yet | Merge one PR first, then add the check to the ruleset |
+| Merge button still active with invalid title | Ruleset not saved or wrong check name | Verify ruleset is Active and check name is exactly `Validate PR Title` |
+| Release fails: `GH006 Protected branch` | Classic branch protection blocking bot push | Switch to Rulesets with Repository admin bypass (Step 9.4) |
+| Release fails: `Permission denied to <username>` | PAT missing `repo` scope or not set | Regenerate PAT with `repo` + `workflow` scopes, update `RELEASE_TOKEN` secret |
+| Release fails: tag exists | Re-running after partial failure | Delete the tag locally and on GitHub, then re-run |
+| Version not bumping | PR title missing valid prefix | PR title must start with `feat:`, `fix:`, `chore:` etc. |
+| `chore(scope):` not bumping | Old regex without scope support | Ensure release.yml has `(\([^)]+\))?!?:` in all patterns |
+| GitHub Release fails: tag not pushed | `--follow-tags` only pushes annotated tags | Push tag explicitly: `git push origin "v1.2.3"` (already in Part 8) |
+| Release notes contain garbled text | Special chars in commit message via env var | Write notes to file with `printf '%b\n' > /tmp/release_notes.md` (already in Part 8) |
