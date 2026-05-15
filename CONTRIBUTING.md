@@ -31,3 +31,4 @@ docs: add API setup guide
 ## Release Flow
 
 Version bumps happen automatically when a PR is merged to `master`. The PR title determines the bump type using the same convention above.
+# Minor bump test
