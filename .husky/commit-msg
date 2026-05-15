@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+
+npx --no -- commitlint --edit "$1"
+EXIT=$?
+
+if [ $EXIT -ne 0 ]; then
+  echo ""
+  echo "Commit blocked: message must follow Conventional Commits format."
+  echo ""
+  echo "  Format : <type>: <description>"
+  echo "  Example: feat: add DocuSign integration"
+  echo "  Example: fix: broken custom field on proposal"
+  echo "  Example: chore: update dependencies"
+  echo ""
+  echo "  Types that trigger a release:"
+  echo "    feat!: or major:  → major bump  (breaking change)"
+  echo "    feat:             → minor bump  (new feature)"
+  echo "    fix: / chore: / docs: / refactor: / etc. → patch bump"
+  echo "    skip:             → no release"
+  echo ""
+  exit 1
+fi
