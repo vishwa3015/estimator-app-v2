@@ -106,12 +106,8 @@ jobs:
             printf '# Changelog\n\n%b\n' "$NEW_ENTRY" > CHANGELOG.md
           fi
 
-          DELIM="CHANGELOG_$(openssl rand -hex 8)"
-          {
-            echo "entry<<${DELIM}"
-            printf '%b\n' "$NEW_ENTRY"
-            echo "${DELIM}"
-          } >> $GITHUB_OUTPUT
+          # Write release notes directly to file — avoids env var interpolation issues
+          printf '%b\n' "$NEW_ENTRY" > /tmp/release_notes.md
 
       - name: Commit, tag, and push
         if: steps.bump.outputs.type != 'skip'
@@ -119,7 +115,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json CHANGELOG.md
-          # Also stage bun lockfile if present
           git add bun.lock bun.lockb 2>/dev/null || true
           git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
           git tag "v${{ steps.version.outputs.new_version }}"
@@ -129,9 +124,7 @@ jobs:
         if: steps.bump.outputs.type != 'skip'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: ${{ steps.changelog.outputs.entry }}
         run: |
-          printf '%s\n' "$RELEASE_NOTES" > /tmp/release_notes.md
           gh release create "v${{ steps.version.outputs.new_version }}" \
             --title "v${{ steps.version.outputs.new_version }}" \
             --notes-file /tmp/release_notes.md
