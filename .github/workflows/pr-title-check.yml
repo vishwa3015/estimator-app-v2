@@ -1,0 +1,67 @@
+name: PR Title Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, master]
+
+jobs:
+  validate-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR title follows Conventional Commits
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "PR Title: $PR_TITLE"
+          echo ""
+
+          # Valid prefixes (must be followed by colon + space or just colon)
+          VALID_PATTERN='^(feat!|BREAKING CHANGE|BREAKING|major|feat|feature|minor|fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci|skip)(\([^)]+\))?!?:[[:space:]].+|^\[skip\]'
+
+          if echo "$PR_TITLE" | grep -qE "$VALID_PATTERN"; then
+            echo "✅ PR title is valid."
+            echo ""
+
+            # Identify the type for a helpful message
+            if echo "$PR_TITLE" | grep -iqE '^(feat!|BREAKING CHANGE|BREAKING|major)(\([^)]+\))?!?:'; then
+              echo "Type: MAJOR release will be triggered on merge."
+            elif echo "$PR_TITLE" | grep -iqE '^(feat|feature|minor)(\([^)]+\))?!?:'; then
+              echo "Type: MINOR release will be triggered on merge."
+            elif echo "$PR_TITLE" | grep -iqE '^(fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci)(\([^)]+\))?!?:'; then
+              echo "Type: PATCH release will be triggered on merge."
+            elif echo "$PR_TITLE" | grep -iqE '^\[skip\]|^skip(\([^)]+\))?:'; then
+              echo "Type: No release will be triggered on merge (skip)."
+            fi
+            exit 0
+          else
+            echo "❌ PR title does not follow Conventional Commits format."
+            echo ""
+            echo "Your title: \"$PR_TITLE\""
+            echo ""
+            echo "────────────────────────────────────────────────────"
+            echo "Required format:  <type>[optional scope]: <description>"
+            echo ""
+            echo "Examples:"
+            echo "  feat: add PDF export for estimates"
+            echo "  feat(auth): support Google SSO"
+            echo "  fix: correct tax calculation on line items"
+            echo "  fix(ui): button misaligned on mobile"
+            echo "  feat!: redesign estimate API (BREAKING CHANGE)"
+            echo "  chore: update dependencies"
+            echo "  docs: update README"
+            echo "  skip: internal branch sync"
+            echo ""
+            echo "Allowed types:"
+            echo "  MAJOR release → feat!, BREAKING, major"
+            echo "  MINOR release → feat, feature, minor"
+            echo "  PATCH release → fix, hotfix, patch, chore, docs,"
+            echo "                  refactor, style, perf, test, build, ci"
+            echo "  No release    → skip, [skip]"
+            echo "────────────────────────────────────────────────────"
+            echo ""
+            echo "Rename your PR title and this check will re-run automatically."
+            exit 1
+          fi
