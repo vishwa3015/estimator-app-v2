@@ -106,10 +106,11 @@ jobs:
             printf '# Changelog\n\n%b\n' "$NEW_ENTRY" > CHANGELOG.md
           fi
 
+          DELIM="CHANGELOG_$(openssl rand -hex 8)"
           {
-            echo "entry<<CHANGELOG_EOF"
-            printf '%b' "$NEW_ENTRY"
-            echo "CHANGELOG_EOF"
+            echo "entry<<${DELIM}"
+            printf '%b\n' "$NEW_ENTRY"
+            echo "${DELIM}"
           } >> $GITHUB_OUTPUT
 
       - name: Commit, tag, and push
