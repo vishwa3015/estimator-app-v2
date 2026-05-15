@@ -1,2 +1,23 @@
+#!/usr/bin/env sh
+
+echo "Running lint checks..."
 npx lint-staged
+LINT_EXIT=$?
+
+if [ $LINT_EXIT -ne 0 ]; then
+  echo ""
+  echo "Commit blocked: fix ESLint errors above before committing."
+  exit 1
+fi
+
+echo "Running type check..."
 npx tsc --noEmit
+TSC_EXIT=$?
+
+if [ $TSC_EXIT -ne 0 ]; then
+  echo ""
+  echo "Commit blocked: fix TypeScript errors above before committing."
+  exit 1
+fi
+
+echo "All checks passed."

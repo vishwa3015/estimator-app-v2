@@ -20,31 +20,50 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # -----------------------------------------------------------------
-      # Determine bump type from PR label.
-      # Add one of these labels before merging:
-      #   release:major  →  breaking change / new major capability
-      #   release:minor  →  new feature / integration
-      #   release:patch  →  bug fix / hotfix
-      #   (no label)     →  skip — no release this merge
+      # Determine bump type from PR title using Conventional Commits:
+      #
+      #   MAJOR  →  feat!: …  |  BREAKING: …  |  major: …
+      #             Breaking changes, new major capability, arch overhaul
+      #
+      #   MINOR  →  feat: …  |  feature: …  |  minor: …
+      #             New features, integrations, smaller capability additions
+      #
+      #   PATCH  →  fix: …  |  hotfix: …  |  patch: …  |  chore: …
+      #             docs: …  |  refactor: …  |  style: …  |  perf: …
+      #             test: …  |  build: …  |  ci: …
+      #             Bug fixes, hotfixes, minor corrections
+      #
+      #   SKIP   →  skip: …  |  [skip]  |  (no recognized prefix)
+      #             No release for this merge
       # -----------------------------------------------------------------
-      - name: Determine version bump from PR label
+      - name: Determine version bump from PR title
         id: bump
         run: |
-          LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
-          if echo "$LABELS" | grep -q '"release:major"'; then
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          echo "PR title: $PR_TITLE"
+
+          if echo "$PR_TITLE" | grep -iqE '^(feat!|BREAKING CHANGE|BREAKING|major):'; then
             echo "type=major" >> $GITHUB_OUTPUT
-          elif echo "$LABELS" | grep -q '"release:minor"'; then
+            echo "Bump: MAJOR"
+          elif echo "$PR_TITLE" | grep -iqE '^(feat|feature|minor):'; then
             echo "type=minor" >> $GITHUB_OUTPUT
-          elif echo "$LABELS" | grep -q '"release:patch"'; then
+            echo "Bump: MINOR"
+          elif echo "$PR_TITLE" | grep -iqE '^(fix|hotfix|patch|chore|docs|refactor|style|perf|test|build|ci):'; then
             echo "type=patch" >> $GITHUB_OUTPUT
+            echo "Bump: PATCH"
+          elif echo "$PR_TITLE" | grep -iqE '^\[skip\]|^skip:'; then
+            echo "type=skip" >> $GITHUB_OUTPUT
+            echo "Bump: SKIP (explicit)"
           else
             echo "type=skip" >> $GITHUB_OUTPUT
+            echo "Bump: SKIP (no conventional prefix found)"
+            echo "::warning::PR title has no Conventional Commits prefix. Add feat:, fix:, feat!: etc. to trigger a release."
           fi
 
-      - name: No release label — skipping
+      - name: No release — skipping
         if: steps.bump.outputs.type == 'skip'
         run: |
-          echo "::notice::No release label on this PR. Add release:major / release:minor / release:patch to trigger a release."
+          echo "::notice::No release for this PR. Use a prefix like feat:, fix:, feat!: in the PR title to trigger a version bump."
 
       - uses: actions/setup-node@v4
         if: steps.bump.outputs.type != 'skip'
@@ -66,6 +85,9 @@ jobs:
         run: |
           VERSION="v${{ steps.version.outputs.new_version }}"
           DATE=$(date +%Y-%m-%d)
+          BUMP_TYPE="${{ steps.bump.outputs.type }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
           if [ -z "$PREV_TAG" ]; then
@@ -74,10 +96,9 @@ jobs:
             COMMITS=$(git log --pretty=format:"- %s" "${PREV_TAG}..HEAD")
           fi
 
-          NEW_ENTRY="## ${VERSION} (${DATE})\n\n${COMMITS}"
+          NEW_ENTRY="## ${VERSION} (${DATE}) [${BUMP_TYPE}]\n\n**PR #${PR_NUMBER}:** ${PR_TITLE}\n\n### Changes\n${COMMITS}"
 
           if [ -f CHANGELOG.md ]; then
-            # Prepend new entry after the header line
             HEADER=$(head -1 CHANGELOG.md)
             BODY=$(tail -n +2 CHANGELOG.md)
             printf '%s\n\n%b\n%s' "$HEADER" "$NEW_ENTRY" "$BODY" > CHANGELOG.md
@@ -85,7 +106,6 @@ jobs:
             printf '# Changelog\n\n%b\n' "$NEW_ENTRY" > CHANGELOG.md
           fi
 
-          # Store entry for GitHub Release body
           {
             echo "entry<<CHANGELOG_EOF"
             printf '%b' "$NEW_ENTRY"
@@ -98,6 +118,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json package-lock.json CHANGELOG.md
+          # Also stage bun lockfile if present
+          git add bun.lock bun.lockb 2>/dev/null || true
           git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
           git tag "v${{ steps.version.outputs.new_version }}"
           git push origin main --follow-tags
