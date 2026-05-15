@@ -118,7 +118,8 @@ jobs:
           git add bun.lock bun.lockb 2>/dev/null || true
           git commit -m "chore(release): v${{ steps.version.outputs.new_version }} [skip ci]"
           git tag "v${{ steps.version.outputs.new_version }}"
-          git push origin HEAD:${{ github.event.pull_request.base.ref }} --follow-tags
+          git push origin HEAD:${{ github.event.pull_request.base.ref }}
+          git push origin "v${{ steps.version.outputs.new_version }}"
 
       - name: Create GitHub Release
         if: steps.bump.outputs.type != 'skip'
