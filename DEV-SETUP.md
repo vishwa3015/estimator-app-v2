@@ -463,6 +463,7 @@ Now GitHub will block the **Merge** button until the PR title passes the check.
 - [ ] **Test 2:** Commit with message `"updated stuff"` → should be blocked by commitlint
 - [ ] **Test 3:** Open PR with invalid title → `Validate PR Title` check should fail
 - [ ] **Test 4:** Merge PR with `feat:` title → version bumps minor, CHANGELOG updated, GitHub Release created
+- [ ] **Test 5:** Merge PR with `chore:` or `chore(scope):` title → patch bump triggered
 
 ---
 
